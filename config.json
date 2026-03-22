@@ -1,15 +1,16 @@
 {
-  "api_id": 111111111,
-  "api_hash": "ваш_api_hash",
-  "bot_token": "ваш_bot_token",
-  "my_id": 111111111,
-  "technical_channel_id": -1001111111111,
-  "main_channel_id": -1001111111112,
+  "api_id": 2040,
+  "api_hash": "b18441a1ff607e10a989891a5462e627",
+  "bot_token": "8755560566:AAGZRgcWSa3U6kh9yFw2tu0KJJQF_tFczpg",
 
-  "openai_api_key_gpt": "sk-...",
+  "my_id": 8532615045,
+  "technical_channel_id": -1003720459240,
+  "main_channel_id": -1003720459240,
+
+  "openai_api_key_gpt": "",
   "link_gpt": "https://api.openai.com/v1/chat/completions",
 
-  "openai_api_key_dalle": "sk-...",
+  "openai_api_key_dalle": "",
   "link_dalle": "https://api.openai.com/v1/images/generations",
 
   "SAFE_MODE_LIMIT": 220,
