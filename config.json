@@ -1,0 +1,20 @@
+{
+  "api_id": 111111111,
+  "api_hash": "ваш_api_hash",
+  "bot_token": "ваш_bot_token",
+  "my_id": 111111111,
+  "technical_channel_id": -1001111111111,
+  "main_channel_id": -1001111111112,
+
+  "openai_api_key_gpt": "sk-...",
+  "link_gpt": "https://api.openai.com/v1/chat/completions",
+
+  "openai_api_key_dalle": "sk-...",
+  "link_dalle": "https://api.openai.com/v1/images/generations",
+
+  "SAFE_MODE_LIMIT": 220,
+  "TIMEOUT": 10800,
+  "rss_timeout": 3666,
+  "post_interval": 3666,
+  "max_rss_entries": 170
+}

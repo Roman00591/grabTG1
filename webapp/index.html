@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MyGrab Bot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: #0e0e12;
+    --surface: #16161d;
+    --surface2: #1e1e28;
+    --border: #2a2a38;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --green: #43d98c;
+    --yellow: #ffd166;
+    --text: #e8e8f0;
+    --muted: #6b6b85;
+    --radius: 16px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Onest', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  .header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(14,14,18,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .header-logo {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .header-title { font-size: 17px; font-weight: 600; }
+  .header-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .status-dot {
+    margin-left: auto; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* ── Nav ── */
+  .nav {
+    display: flex; gap: 4px;
+    padding: 12px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    position: sticky; top: 65px; z-index: 99;
+    background: rgba(14,14,18,0.9);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn {
+    flex-shrink: 0;
+    padding: 7px 14px; border-radius: 20px;
+    font-size: 13px; font-weight: 500;
+    border: 1px solid var(--border);
+    background: transparent; color: var(--muted);
+    cursor: pointer; transition: all .2s;
+  }
+  .nav-btn.active {
+    background: var(--accent); border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(108,99,255,.4);
+  }
+
+  /* ── Pages ── */
+  .page { display: none; padding: 20px 16px 100px; animation: fadeUp .3s ease; }
+  .page.active { display: block; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── Section ── */
+  .section { margin-bottom: 24px; }
+  .section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 10px; padding-left: 4px;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .card-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: background .15s;
+  }
+  .card-row:last-child { border-bottom: none; }
+  .card-row:active { background: var(--surface2); }
+
+  .row-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; flex-shrink: 0;
+  }
+  .row-body { flex: 1; min-width: 0; }
+  .row-title { font-size: 15px; font-weight: 500; }
+  .row-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ── Toggle ── */
+  .toggle {
+    width: 44px; height: 26px; border-radius: 13px;
+    background: var(--border); position: relative;
+    cursor: pointer; flex-shrink: 0;
+    transition: background .25s;
+    border: none; outline: none;
+  }
+  .toggle::after {
+    content: ''; position: absolute;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; top: 3px; left: 3px;
+    transition: transform .25s;
+    box-shadow: 0 1px 4px rgba(0,0,0,.3);
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle.on::after { transform: translateX(18px); }
+
+  /* ── Stats ── */
+  .stats-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute;
+    width: 60px; height: 60px; border-radius: 50%;
+    top: -15px; right: -15px;
+    opacity: .15;
+  }
+  .stat-card.s1::before { background: var(--accent); }
+  .stat-card.s2::before { background: var(--green); }
+  .stat-card.s3::before { background: var(--yellow); }
+  .stat-card.s4::before { background: var(--accent2); }
+  .stat-val { font-size: 28px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* ── Channel item ── */
+  .channel-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 8px;
+    animation: fadeUp .3s ease;
+  }
+  .channel-avatar {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0; font-weight: 600;
+    color: #fff;
+  }
+  .channel-name { font-size: 14px; font-weight: 500; }
+  .channel-id { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+  .channel-badge {
+    margin-left: auto; flex-shrink: 0;
+    padding: 3px 8px; border-radius: 6px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge-src { background: rgba(108,99,255,.15); color: var(--accent); }
+  .badge-dst { background: rgba(67,217,140,.15); color: var(--green); }
+
+  .arrow-row {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; margin: 4px 0 8px; color: var(--muted); font-size: 12px;
+  }
+  .arrow-line {
+    flex: 1; height: 1px;
+    background: linear-gradient(to right, transparent, var(--border));
+  }
+  .arrow-line.r { background: linear-gradient(to left, transparent, var(--border)); }
+
+  /* ── Input ── */
+  .input-wrap { position: relative; margin-bottom: 12px; }
+  .input-wrap input, .input-wrap textarea {
+    width: 100%; padding: 13px 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; color: var(--text);
+    font-family: 'Onest', sans-serif; font-size: 15px;
+    outline: none; transition: border-color .2s;
+    resize: none;
+  }
+  .input-wrap input:focus, .input-wrap textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(108,99,255,.15);
+  }
+  .input-label {
+    font-size: 12px; color: var(--muted); margin-bottom: 6px; padding-left: 2px;
+  }
+
+  /* ── Button ── */
+  .btn {
+    width: 100%; padding: 14px;
+    border-radius: 12px; border: none;
+    font-family: 'Onest', sans-serif; font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(108,99,255,.35);
+  }
+  .btn-primary:active { transform: scale(.97); }
+  .btn-danger { background: rgba(255,101,132,.15); color: var(--accent2); border: 1px solid rgba(255,101,132,.3); }
+  .btn-ghost { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn + .btn { margin-top: 8px; }
+
+  /* ── Tag list ── */
+  .tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .tag {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 20px;
+    background: var(--surface2); border: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .tag-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 0; line-height: 1; }
+  .tag-del:active { color: var(--accent2); }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+    display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    width: 100%; max-width: 500px;
+    background: var(--surface); border-radius: 24px 24px 0 0;
+    padding: 20px 20px 40px;
+    transform: translateY(100%); transition: transform .3s cubic-bezier(.32,1,.23,1);
+    border-top: 1px solid var(--border);
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 20px; }
+  .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 10px 20px; border-radius: 20px;
+    font-size: 14px; font-weight: 500;
+    opacity: 0; transition: all .3s; z-index: 300; white-space: nowrap;
+    box-shadow: 0 8px 30px rgba(0,0,0,.4);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── Prompt textarea ── */
+  .prompt-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px;
+    font-size: 14px; color: var(--text); line-height: 1.5;
+    min-height: 80px; font-family: 'Onest', sans-serif;
+  }
+
+  /* ── Log ── */
+  .log-entry {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; line-height: 1.6;
+    padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.04);
+    word-break: break-all;
+  }
+  .log-entry.info { color: #7ec8e3; }
+  .log-entry.error { color: var(--accent2); }
+  .log-box {
+    background: #0a0a0f; border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px;
+    max-height: 300px; overflow-y: auto;
+  }
+
+  .empty-state {
+    text-align: center; padding: 40px 20px;
+    color: var(--muted); font-size: 14px;
+  }
+  .empty-state .emoji { font-size: 40px; margin-bottom: 12px; }
+
+  /* ── Bottom bar ── */
+  .bottom-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: 80px; background: rgba(14,14,18,.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 0 10px 10px; z-index: 100;
+  }
+  .tab-btn {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px; background: none; border: none; color: var(--muted);
+    font-family: 'Onest', sans-serif; font-size: 10px; font-weight: 500;
+    cursor: pointer; transition: color .2s; padding: 8px 12px;
+    border-radius: 12px; min-width: 56px;
+  }
+  .tab-btn .tab-icon { font-size: 22px; transition: transform .2s; }
+  .tab-btn.active { color: var(--accent); }
+  .tab-btn.active .tab-icon { transform: scale(1.1); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-logo">🤖</div>
+  <div>
+    <div class="header-title">MyGrab Bot</div>
+    <div class="header-sub">SMM Автопостинг</div>
+  </div>
+  <div class="status-dot" id="statusDot"></div>
+</div>
+
+<!-- Pages -->
+
+<!-- ── DASHBOARD ── -->
+<div class="page active" id="page-dashboard">
+  <div class="stats-grid">
+    <div class="stat-card s1">
+      <div class="stat-val" id="stat-channels">0</div>
+      <div class="stat-label">Связок каналов</div>
+    </div>
+    <div class="stat-card s2">
+      <div class="stat-val" id="stat-posted">0</div>
+      <div class="stat-label">Опубликовано</div>
+    </div>
+    <div class="stat-card s3">
+      <div class="stat-val" id="stat-rss">0</div>
+      <div class="stat-label">RSS лент</div>
+    </div>
+    <div class="stat-card s4">
+      <div class="stat-val" id="stat-words">0</div>
+      <div class="stat-label">Слов в фильтрах</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Быстрые переключатели</div>
+    <div class="card">
+      <div class="card-row">
+        <div class="row-icon" style="background:rgba(108,99,255,.15)">✉️</div>
+        <div class="row-body">
+          <div class="row-title">Модерация</div>
+          <div class="row-sub">Ручная проверка перед публикацией</div>
+        </div>
+        <button class="toggle" id="tog-moderation" onclick="toggleSetting('moderation')"></button>
+      </div>
+      <div class="card-row">
+        <div class="row-icon" style="background:rgba(67,217,140,.15)">✍️</div>
+        <div class="row-body">
+          <div class="row-title">Рерайт текста</div>
+          <div class="row-sub">Переписывать через GPT</div>
+        </div>
+        <button class="toggle" id="tog-copywriting" onclick="toggleSetting('copywriting')"></button>
+      </div>
+      <div class="card-row">
+        <div class="row-icon" style="background:rgba(255,209,102,.15)">🔗</div>
+        <div class="row-body">
+          <div class="row-title">Замена ссылок</div>
+          <div class="row-sub">Подменять ссылки в постах</div>
+        </div>
+        <button class="toggle" id="tog-link_replacement" onclick="toggleSetting('link_replacement')"></button>
+      </div>
+      <div class="card-row">
+        <div class="row-icon" style="background:rgba(255,101,132,.15)">📡</div>
+        <div class="row-body">
+          <div class="row-title">RSS сканирование</div>
+          <div class="row-sub">Автоматически постить новости</div>
+        </div>
+        <button class="toggle" id="tog-rss_scanning" onclick="toggleSetting('rss_scanning')"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">GPT режим</div>
+    <div class="card">
+      <div class="card-row" id="gpt-internal-row" onclick="setGptMode(true)" style="cursor:pointer">
+        <div class="row-icon" style="background:rgba(108,99,255,.15)">🆓</div>
+        <div class="row-body">
+          <div class="row-title">Внутренний GPT</div>
+          <div class="row-sub">Бесплатно через g4f</div>
+        </div>
+        <span id="gpt-check-internal" style="color:var(--accent);font-size:18px">✓</span>
+      </div>
+      <div class="card-row" id="gpt-external-row" onclick="setGptMode(false)" style="cursor:pointer">
+        <div class="row-icon" style="background:rgba(255,209,102,.15)">🔑</div>
+        <div class="row-body">
+          <div class="row-title">Внешний GPT</div>
+          <div class="row-sub">OpenAI API ключ</div>
+        </div>
+        <span id="gpt-check-external" style="color:var(--muted);font-size:18px">✓</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── CHANNELS ── -->
+<div class="page" id="page-channels">
+  <div class="section">
+    <div class="section-label">Связки источник → получатель</div>
+    <div id="mapping-list"></div>
+    <button class="btn btn-primary" onclick="openModal('modal-add-channel')">
+      ➕ Добавить связку
+    </button>
+  </div>
+</div>
+
+<!-- ── FILTERS ── -->
+<div class="page" id="page-filters">
+  <div class="section">
+    <div class="section-label">🟢 Белый список — посты только с этими словами</div>
+    <div id="whitelist-tags" class="tag-list"></div>
+    <button class="btn btn-ghost" style="margin-top:12px" onclick="openAddWord('whitelist')">➕ Добавить слово</button>
+  </div>
+  <div class="section">
+    <div class="section-label">🔴 Чёрный список — посты с этими словами блокируются</div>
+    <div id="blacklist-tags" class="tag-list"></div>
+    <button class="btn btn-ghost" style="margin-top:12px" onclick="openAddWord('blacklist')">➕ Добавить слово</button>
+  </div>
+  <div class="section">
+    <div class="section-label">✂️ Обрезать текст после слова</div>
+    <div id="deleting-tags" class="tag-list"></div>
+    <button class="btn btn-ghost" style="margin-top:12px" onclick="openAddWord('deleting_text')">➕ Добавить слово</button>
+  </div>
+</div>
+
+<!-- ── GPT PROMPT ── -->
+<div class="page" id="page-gpt">
+  <div class="section">
+    <div class="section-label">Промпт для рерайта</div>
+    <div class="input-label">Этот текст добавляется перед каждым постом при рерайте</div>
+    <div class="input-wrap">
+      <textarea id="prompt-input" rows="4" placeholder="Сделай рерайт этого текста на русском языке..."></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="savePrompt()">💾 Сохранить промпт</button>
+  </div>
+
+  <div class="section">
+    <div class="section-label">RSS ленты</div>
+    <div id="rss-list"></div>
+    <button class="btn btn-ghost" style="margin-top:10px" onclick="openModal('modal-add-rss')">➕ Добавить RSS</button>
+  </div>
+</div>
+
+<!-- ── LOGS ── -->
+<div class="page" id="page-logs">
+  <div class="section">
+    <div class="section-label">Последние записи</div>
+    <div class="log-box" id="log-box">
+      <div class="empty-state"><div class="emoji">📋</div>Загрузка логов...</div>
+    </div>
+  </div>
+  <button class="btn btn-ghost" onclick="loadLogs()" style="margin-top:12px">🔄 Обновить</button>
+</div>
+
+<!-- ── BOTTOM NAV ── -->
+<div class="bottom-bar">
+  <button class="tab-btn active" data-page="dashboard" onclick="showPage('dashboard',this)">
+    <span class="tab-icon">🏠</span>Главная
+  </button>
+  <button class="tab-btn" data-page="channels" onclick="showPage('channels',this)">
+    <span class="tab-icon">📡</span>Каналы
+  </button>
+  <button class="tab-btn" data-page="filters" onclick="showPage('filters',this)">
+    <span class="tab-icon">🔍</span>Фильтры
+  </button>
+  <button class="tab-btn" data-page="gpt" onclick="showPage('gpt',this)">
+    <span class="tab-icon">🤖</span>GPT
+  </button>
+  <button class="tab-btn" data-page="logs" onclick="showPage('logs',this)">
+    <span class="tab-icon">📋</span>Логи
+  </button>
+</div>
+
+<!-- ── MODALS ── -->
+
+<!-- Add channel mapping -->
+<div class="modal-overlay" id="modal-add-channel" onclick="closeModalOutside(event,'modal-add-channel')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Добавить связку каналов</div>
+    <div class="input-label">ID канала-источника</div>
+    <div class="input-wrap"><input type="text" id="src-channel-input" placeholder="-100123456789"></div>
+    <div class="input-label">Название источника</div>
+    <div class="input-wrap"><input type="text" id="src-title-input" placeholder="Мой источник"></div>
+    <div class="input-label">ID канала-получателя</div>
+    <div class="input-wrap"><input type="text" id="dst-channel-input" placeholder="-100987654321"></div>
+    <div class="input-label">Название получателя</div>
+    <div class="input-wrap"><input type="text" id="dst-title-input" placeholder="Мой канал"></div>
+    <button class="btn btn-primary" onclick="addChannelMapping()">✅ Добавить</button>
+    <button class="btn btn-ghost" onclick="closeModal('modal-add-channel')">Отмена</button>
+  </div>
+</div>
+
+<!-- Add word -->
+<div class="modal-overlay" id="modal-add-word" onclick="closeModalOutside(event,'modal-add-word')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-word-title">Добавить слово</div>
+    <div class="input-wrap"><input type="text" id="word-input" placeholder="Введите слово..."></div>
+    <button class="btn btn-primary" onclick="addWord()">✅ Добавить</button>
+    <button class="btn btn-ghost" onclick="closeModal('modal-add-word')">Отмена</button>
+  </div>
+</div>
+
+<!-- Add RSS -->
+<div class="modal-overlay" id="modal-add-rss" onclick="closeModalOutside(event,'modal-add-rss')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Добавить RSS ленту</div>
+    <div class="input-label">URL RSS-ленты</div>
+    <div class="input-wrap"><input type="url" id="rss-url-input" placeholder="https://example.com/feed.xml"></div>
+    <div class="input-label">Название (необязательно)</div>
+    <div class="input-wrap"><input type="text" id="rss-title-input" placeholder="Мои новости"></div>
+    <button class="btn btn-primary" onclick="addRss()">✅ Добавить</button>
+    <button class="btn btn-ghost" onclick="closeModal('modal-add-rss')">Отмена</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Telegram WebApp init ─────────────────────────────────
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+  tg.setHeaderColor('#0e0e12');
+  tg.setBackgroundColor('#0e0e12');
+}
+
+// ─── API base ─────────────────────────────────────────────
+const API = '/api'; // Flask backend на том же сервере
+
+// ─── State ────────────────────────────────────────────────
+let state = {
+  moderation: false,
+  copywriting: false,
+  link_replacement: false,
+  rss_scanning: false,
+  gpt_mode: true,
+  prompt: '',
+  channels: [],
+  whitelist: [],
+  blacklist: [],
+  deleting_text: [],
+  rss: [],
+  stats: { posted: 0 },
+};
+
+let currentWordList = '';
+
+// ─── API calls ────────────────────────────────────────────
+async function apiGet(path) {
+  try {
+    const r = await fetch(API + path);
+    return await r.json();
+  } catch(e) { return null; }
+}
+async function apiPost(path, data) {
+  try {
+    const r = await fetch(API + path, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+    return await r.json();
+  } catch(e) { return null; }
+}
+async function apiDelete(path, data) {
+  try {
+    const r = await fetch(API + path, {
+      method: 'DELETE',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+// ─── Load all data ────────────────────────────────────────
+async function loadAll() {
+  const data = await apiGet('/status');
+  if (!data) { showToast('❌ Нет связи с ботом'); return; }
+  state = { ...state, ...data };
+  renderAll();
+}
+
+function renderAll() {
+  // Toggles
+  ['moderation','copywriting','link_replacement','rss_scanning'].forEach(k => {
+    const el = document.getElementById('tog-' + k);
+    if (el) el.classList.toggle('on', state[k]);
+  });
+  // GPT mode
+  document.getElementById('gpt-check-internal').style.color = state.gpt_mode ? 'var(--accent)' : 'var(--border)';
+  document.getElementById('gpt-check-external').style.color = !state.gpt_mode ? 'var(--accent)' : 'var(--border)';
+  // Prompt
+  if (state.prompt) document.getElementById('prompt-input').value = state.prompt;
+  // Stats
+  document.getElementById('stat-channels').textContent = state.channels?.length || 0;
+  document.getElementById('stat-posted').textContent = state.stats?.posted || 0;
+  document.getElementById('stat-rss').textContent = state.rss?.length || 0;
+  const words = (state.whitelist?.length||0) + (state.blacklist?.length||0) + (state.deleting_text?.length||0);
+  document.getElementById('stat-words').textContent = words;
+  // Channel list
+  renderChannels();
+  renderTags('whitelist', state.whitelist || []);
+  renderTags('blacklist', state.blacklist || []);
+  renderTags('deleting_text', state.deleting_text || []);
+  renderRss();
+}
+
+// ─── Channels ─────────────────────────────────────────────
+function renderChannels() {
+  const el = document.getElementById('mapping-list');
+  const ch = state.channels || [];
+  if (!ch.length) {
+    el.innerHTML = '<div class="empty-state"><div class="emoji">📡</div>Нет связок каналов.<br>Добавьте первую!</div>';
+    return;
+  }
+  el.innerHTML = ch.map((c,i) => `
+    <div class="channel-item" style="animation-delay:${i*0.05}s">
+      <div class="channel-avatar">${(c.src_title||'?')[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div class="channel-name">${c.src_title || 'Источник'}</div>
+        <div class="channel-id">${c.src_id}</div>
+      </div>
+      <span style="color:var(--muted);margin:0 4px">→</span>
+      <div style="flex:1;min-width:0;text-align:right">
+        <div class="channel-name">${c.dst_title || 'Получатель'}</div>
+        <div class="channel-id">${c.dst_id}</div>
+      </div>
+      <button onclick="removeChannel(${c.src_id},${c.dst_id})"
+        style="margin-left:8px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px">✕</button>
+    </div>
+  `).join('');
+}
+
+async function addChannelMapping() {
+  const srcId = parseInt(document.getElementById('src-channel-input').value);
+  const srcTitle = document.getElementById('src-title-input').value.trim() || 'Источник';
+  const dstId = parseInt(document.getElementById('dst-channel-input').value);
+  const dstTitle = document.getElementById('dst-title-input').value.trim() || 'Получатель';
+  if (!srcId || !dstId) { showToast('❌ Введите оба ID'); return; }
+  const r = await apiPost('/channels', { src_id: srcId, src_title: srcTitle, dst_id: dstId, dst_title: dstTitle });
+  if (r?.ok) {
+    state.channels = [...(state.channels||[]), { src_id: srcId, src_title: srcTitle, dst_id: dstId, dst_title: dstTitle }];
+    renderChannels();
+    closeModal('modal-add-channel');
+    showToast('✅ Связка добавлена');
+    renderAll();
+  }
+}
+
+async function removeChannel(srcId, dstId) {
+  if (tg) tg.showConfirm('Удалить связку?', async (ok) => {
+    if (!ok) return;
+    const r = await apiDelete('/channels', { src_id: srcId, dst_id: dstId });
+    if (r?.ok) {
+      state.channels = state.channels.filter(c => !(c.src_id == srcId && c.dst_id == dstId));
+      renderChannels();
+      showToast('🗑 Связка удалена');
+      renderAll();
+    }
+  }); else {
+    const r = await apiDelete('/channels', { src_id: srcId, dst_id: dstId });
+    if (r?.ok) { state.channels = state.channels.filter(c => !(c.src_id == srcId && c.dst_id == dstId)); renderChannels(); showToast('🗑 Удалено'); renderAll(); }
+  }
+}
+
+// ─── Toggles ──────────────────────────────────────────────
+async function toggleSetting(key) {
+  const newVal = !state[key];
+  const r = await apiPost('/toggle', { key, value: newVal });
+  if (r?.ok) {
+    state[key] = newVal;
+    document.getElementById('tog-' + key)?.classList.toggle('on', newVal);
+    showToast(newVal ? '✅ Включено' : '❌ Выключено');
+  }
+}
+
+async function setGptMode(internal) {
+  const r = await apiPost('/toggle', { key: 'gpt_mode', value: internal });
+  if (r?.ok) {
+    state.gpt_mode = internal;
+    document.getElementById('gpt-check-internal').style.color = internal ? 'var(--accent)' : 'var(--border)';
+    document.getElementById('gpt-check-external').style.color = !internal ? 'var(--accent)' : 'var(--border)';
+    showToast(internal ? '🆓 Внутренний GPT' : '🔑 Внешний GPT');
+  }
+}
+
+// ─── Prompt ───────────────────────────────────────────────
+async function savePrompt() {
+  const text = document.getElementById('prompt-input').value.trim();
+  if (!text) return;
+  const r = await apiPost('/prompt', { text });
+  if (r?.ok) { state.prompt = text; showToast('💾 Промпт сохранён'); }
+}
+
+// ─── Word lists ───────────────────────────────────────────
+function renderTags(listName, words) {
+  const idMap = { whitelist: 'whitelist-tags', blacklist: 'blacklist-tags', deleting_text: 'deleting-tags' };
+  const el = document.getElementById(idMap[listName]);
+  if (!el) return;
+  if (!words.length) { el.innerHTML = '<span style="color:var(--muted);font-size:13px">Пусто</span>'; return; }
+  el.innerHTML = words.map(w => `
+    <div class="tag">
+      <span>${w}</span>
+      <button class="tag-del" onclick="removeWord('${listName}','${w}')">✕</button>
+    </div>
+  `).join('');
+}
+
+function openAddWord(listName) {
+  currentWordList = listName;
+  const titles = { whitelist: '🟢 Белый список', blacklist: '🔴 Чёрный список', deleting_text: '✂️ Слово для обрезки' };
+  document.getElementById('modal-word-title').textContent = titles[listName];
+  document.getElementById('word-input').value = '';
+  openModal('modal-add-word');
+}
+
+async function addWord() {
+  const word = document.getElementById('word-input').value.trim();
+  if (!word) return;
+  const r = await apiPost('/words', { list: currentWordList, word });
+  if (r?.ok) {
+    state[currentWordList] = [...(state[currentWordList]||[]), word];
+    renderTags(currentWordList, state[currentWordList]);
+    closeModal('modal-add-word');
+    showToast('✅ Добавлено');
+    renderAll();
+  }
+}
+
+async function removeWord(listName, word) {
+  const r = await apiDelete('/words', { list: listName, word });
+  if (r?.ok) {
+    state[listName] = state[listName].filter(w => w !== word);
+    renderTags(listName, state[listName]);
+    showToast('🗑 Удалено');
+    renderAll();
+  }
+}
+
+// ─── RSS ──────────────────────────────────────────────────
+function renderRss() {
+  const el = document.getElementById('rss-list');
+  const list = state.rss || [];
+  if (!list.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:4px 0">Нет RSS лент</div>'; return; }
+  el.innerHTML = list.map(r => `
+    <div class="channel-item">
+      <div class="channel-avatar" style="background:linear-gradient(135deg,var(--yellow),var(--accent2))">📰</div>
+      <div style="flex:1;min-width:0">
+        <div class="channel-name">${r.title}</div>
+        <div class="channel-id" style="word-break:break-all">${r.url}</div>
+      </div>
+      <button onclick="removeRss('${r.url}')"
+        style="margin-left:8px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px">✕</button>
+    </div>
+  `).join('');
+}
+
+async function addRss() {
+  const url = document.getElementById('rss-url-input').value.trim();
+  const title = document.getElementById('rss-title-input').value.trim() || url;
+  if (!url) return;
+  const r = await apiPost('/rss', { url, title });
+  if (r?.ok) {
+    state.rss = [...(state.rss||[]), { url, title }];
+    renderRss();
+    closeModal('modal-add-rss');
+    showToast('✅ RSS добавлен');
+    renderAll();
+  }
+}
+
+async function removeRss(url) {
+  const r = await apiDelete('/rss', { url });
+  if (r?.ok) { state.rss = state.rss.filter(r => r.url !== url); renderRss(); showToast('🗑 Удалено'); renderAll(); }
+}
+
+// ─── Logs ─────────────────────────────────────────────────
+async function loadLogs() {
+  const el = document.getElementById('log-box');
+  el.innerHTML = '<div style="color:var(--muted);font-size:12px">Загрузка...</div>';
+  const data = await apiGet('/logs');
+  if (!data?.lines?.length) {
+    el.innerHTML = '<div class="empty-state"><div class="emoji">📋</div>Логов пока нет</div>';
+    return;
+  }
+  el.innerHTML = data.lines.map(line => {
+    const isErr = line.includes('ERROR');
+    return `<div class="log-entry ${isErr?'error':'info'}">${line}</div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+// ─── Navigation ───────────────────────────────────────────
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'logs') loadLogs();
+}
+
+// ─── Modals ───────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+function closeModalOutside(e, id) {
+  if (e.target === document.getElementById(id)) closeModal(id);
+}
+
+// ─── Toast ────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ─── Init ─────────────────────────────────────────────────
+loadAll();
+</script>
+</body>
+</html>

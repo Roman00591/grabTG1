@@ -1,0 +1,7 @@
+aiogram==2.25.1
+telethon
+aiohttp
+aiohttp_socks
+feedparser
+g4f
+nest_asyncio
